@@ -40,12 +40,19 @@ echo "  Installing production dependencies..."
 cd "$GATEWAY_BUNDLE"
 npm install --production --ignore-scripts 2>&1 | tail -5
 
-# 4. Rebuild native modules (better-sqlite3) against Electron's Node headers
+# 4. Rebuild native modules (better-sqlite3, node-pty) against Electron's Node headers
 echo "  Rebuilding native modules for Electron..."
 ELECTRON_VER=$(node -e "console.log(require('$ROOT/desktop/node_modules/electron/package.json').version)")
 echo "  Electron version: $ELECTRON_VER"
+# On macOS 26+ the CLT's usr/include/c++/v1 is incomplete — the full libc++ headers
+# live inside the SDK. Add the SDK's c++ path so node-gyp can find them.
+SDK_CXX="$(xcrun --show-sdk-path 2>/dev/null)/usr/include/c++/v1"
+if [ -f "$SDK_CXX/functional" ]; then
+  export CXXFLAGS="-I$SDK_CXX"
+  echo "  Using SDK C++ headers: $SDK_CXX"
+fi
 cd "$GATEWAY_BUNDLE"
-npx --yes @electron/rebuild -v "$ELECTRON_VER" -m . -w better-sqlite3 2>&1 | tail -5
+"$ROOT/desktop/node_modules/.bin/electron-rebuild" -v "$ELECTRON_VER" -m . -w better-sqlite3,node-pty 2>&1 | tail -5
 
 # 5. Strip non-macOS vendor binaries from Codex SDK (~330MB savings)
 echo "  Stripping non-macOS binaries from @openai/codex-sdk..."
