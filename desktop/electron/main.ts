@@ -38,6 +38,19 @@ if (!gotSingleInstanceLock) {
 autoUpdater.autoDownload = true;
 autoUpdater.autoInstallOnAppQuit = true;
 
+// Detect ad-hoc signature (locally built fork) — auto-updates will always fail with
+// signature mismatch when the installed app is ad-hoc signed and the upstream update
+// is Developer ID signed. Skip all update checks in this case.
+function isAdHocSigned(): boolean {
+  try {
+    const { execSync } = require('child_process');
+    const out: string = execSync(`codesign -d --verbose=2 "${process.execPath}" 2>&1`, { encoding: 'utf-8' });
+    return out.includes('Signature=adhoc');
+  } catch {
+    return false;
+  }
+}
+
 const UPDATER_LOG_PATH = path.join(DORABOT_LOGS_DIR, 'updater.log');
 
 function ulog(msg: string): void {
@@ -114,10 +127,13 @@ function setupAutoUpdater(): void {
     }, 5000);
   });
 
-  // Check for updates 10s after launch, then every 30 minutes
-  if (!is.dev) {
+  // Check for updates 10s after launch, then every 30 minutes.
+  // Skip if ad-hoc signed — upstream updates would fail signature validation.
+  if (!is.dev && !isAdHocSigned()) {
     setTimeout(() => autoUpdater.checkForUpdates().catch((e) => ulog(`Initial check failed: ${e.message}`)), 10_000);
     updateCheckInterval = setInterval(() => autoUpdater.checkForUpdates().catch((e) => ulog(`Periodic check failed: ${e.message}`)), 30 * 60 * 1000);
+  } else if (!is.dev) {
+    ulog('Ad-hoc signed build — skipping auto-update checks.');
   }
 }
 
