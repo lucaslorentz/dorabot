@@ -224,6 +224,11 @@ export default function App() {
   const leftPanelRef = useRef<PanelImperativeHandle | null>(null);
   const filesPanelSize = useRef(localStorage.getItem('dorabot:filesPanelSize') || '30%');
   const filesPanelRef = useRef<PanelImperativeHandle | null>(null);
+  // Computed once at mount — defaultSize must never change after mount or the library
+  // redistributes sizes, which causes the file panel to collapse immediately on toggle.
+  const mainPanelDefaultSize = useRef(
+    `${100 - (parseFloat(leftPanelSize.current) || 12) - (showFiles ? (parseFloat(filesPanelSize.current) || 30) : 0)}%`
+  );
   const fileExplorerStateRef = useRef<{ viewRoot: string; expanded: string[]; selectedPath: string | null }>(
     (() => {
       try {
@@ -1448,7 +1453,7 @@ export default function App() {
         <ResizableHandle withHandle />
 
         {/* main content — layout-aware, wrapped in DndContext */}
-        <ResizablePanel defaultSize={`${100 - (parseFloat(leftPanelSize.current) || 12) - (showFiles ? (parseFloat(filesPanelSize.current) || 30) : 0)}%`} minSize="30%" className="overflow-hidden min-w-0">
+        <ResizablePanel defaultSize={mainPanelDefaultSize.current} minSize="30%" className="overflow-hidden min-w-0">
           <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
             <div className="relative h-full">
               {renderLayout()}
