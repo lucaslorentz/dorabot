@@ -220,6 +220,8 @@ function PalettePicker({ palette, onPalette }: {
 export default function App() {
   const [showFiles, setShowFiles] = useState(() => localStorage.getItem('dorabot:showFiles') === 'true');
   const [sidebarView, setSidebarView] = useState<'files' | 'git' | 'history'>(() => (localStorage.getItem('dorabot:sidebarView') as 'files' | 'git' | 'history') || 'files');
+  const leftPanelSize = useRef(localStorage.getItem('dorabot:leftPanelSize') || '12%');
+  const leftPanelRef = useRef<PanelImperativeHandle | null>(null);
   const filesPanelSize = useRef(localStorage.getItem('dorabot:filesPanelSize') || '30%');
   const filesPanelRef = useRef<PanelImperativeHandle | null>(null);
   const fileExplorerStateRef = useRef<{ viewRoot: string; expanded: string[]; selectedPath: string | null }>(
@@ -1268,7 +1270,7 @@ export default function App() {
       {/* main layout */}
       <ResizablePanelGroup orientation="horizontal" className="flex-1 min-h-0">
         {/* sidebar */}
-        <ResizablePanel defaultSize="12%" minSize="8%" maxSize="22%" className="bg-card overflow-hidden">
+        <ResizablePanel panelRef={leftPanelRef} defaultSize={leftPanelSize.current} minSize="8%" maxSize="22%" className="bg-card overflow-hidden" onResize={(size, _id, prevSize) => { if (!prevSize) return; const pct = size.asPercentage; leftPanelSize.current = `${pct}%`; localStorage.setItem('dorabot:leftPanelSize', `${pct}%`); }}>
           <div className="flex flex-col h-full min-h-0">
             <div className="shrink-0 p-2">
               <div className="text-[10px] uppercase tracking-wider text-muted-foreground px-2.5 pt-3 pb-1">views</div>
@@ -1446,7 +1448,7 @@ export default function App() {
         <ResizableHandle withHandle />
 
         {/* main content — layout-aware, wrapped in DndContext */}
-        <ResizablePanel defaultSize={layout.isMultiPane ? "85%" : (showFiles ? "55%" : "85%")} minSize="30%" className="overflow-hidden min-w-0">
+        <ResizablePanel defaultSize={`${100 - (parseFloat(leftPanelSize.current) || 12) - (showFiles ? (parseFloat(filesPanelSize.current) || 30) : 0)}%`} minSize="30%" className="overflow-hidden min-w-0">
           <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
             <div className="relative h-full">
               {renderLayout()}
