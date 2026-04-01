@@ -229,6 +229,7 @@ export default function App() {
   const mainPanelDefaultSize = useRef(
     `${100 - (parseFloat(leftPanelSize.current) || 12) - (showFiles ? (parseFloat(filesPanelSize.current) || 30) : 0)}%`
   );
+  const filesPanelDefaultSize = useRef(showFiles ? filesPanelSize.current : "0%");
   const fileExplorerStateRef = useRef<{ viewRoot: string; expanded: string[]; selectedPath: string | null }>(
     (() => {
       try {
@@ -1470,7 +1471,7 @@ export default function App() {
           panelRef={filesPanelRef}
           collapsible
           collapsedSize="0%"
-          defaultSize={showFiles ? filesPanelSize.current : "0%"}
+          defaultSize={filesPanelDefaultSize.current}
           minSize="15%"
           maxSize="45%"
           className="overflow-hidden flex flex-col"
